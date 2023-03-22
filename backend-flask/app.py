@@ -2,6 +2,7 @@ from flask import Flask
 from flask import request
 from flask_cors import CORS, cross_origin
 import os
+# from flask_awscognito import AWSCognitoAuthentication
 
 from services.home_activities import *
 from services.notifications_activities import *
@@ -13,6 +14,7 @@ from services.message_groups import *
 from services.messages import *
 from services.create_message import *
 from services.show_activity import *
+from lib.cognito_jwt_token import CognitoJwtToken, extract_access_token, TokenVerifyError
 
 # HoneyComb ................
 from opentelemetry import trace
@@ -46,6 +48,17 @@ tracer = trace.get_tracer(__name__)
 
 app = Flask(__name__)
 
+cognito_jwt_token = CognitoJwtToken(
+  user_pool_id = os.getenv('AWS_COGNITO_USER_POOL_ID'),
+  user_pool_client_id = os.getenv('AWS_COGNITO_USER_POOL_CLIENT_ID'),
+  region = os.getenv('AWS_DEFAULT_REGION')
+)
+
+# app.config['AWS_COGNITO_USER_POOL_ID'] = os.getenv('AWS_COGNITO_USER_POOL_ID')
+# app.config['AWS_COGNITO_USER_POOL_CLIENT_ID'] = os.getenv('AWS_COGNITO_USER_POOL_CLIENT_ID') -- throwing errors therefore removed from the code
+
+# aws_auth = AWSCognitoAuthentication(app)
+
 # X-RAY..........
 XRayMiddleware(app, xray_recorder)
 
@@ -60,8 +73,8 @@ origins = [frontend, backend]
 cors = CORS(
   app, 
   resources={r"/api/*": {"origins": origins}},
-  expose_headers="location,link",
-  allow_headers="content-type,if-modified-since",
+  headers=['Content-Type', 'Authorization'], 
+  expose_headers='Authorization',
   methods="OPTIONS,GET,HEAD,POST"
 )
 
@@ -101,7 +114,31 @@ def data_create_message():
   return
 
 @app.route("/api/activities/home", methods=['GET'])
+@xray_recorder.capture('activities_home')
+# @aws_auth.authentication_required
 def data_home():
+  # app.logger.debug('AUTH HEADER')
+  # app.logger.debug(
+  #   request.headers.get('Authorization')
+  # )
+  access_token = extract_access_token(request.headers)
+	try:
+		claims = cognito_jwt_token.verify(access_token)
+		# self.claims = self.token_service.claims
+		# g.cognito_claims = self.claims
+    # authenticated request
+    app.logger.debug('authenticated')
+    app.logger.debug(claims)
+    app.logger.debug(claims['username'])
+    data = HomeActivities.run(cognito_user_id = claims['username'])
+	except TokenVerifyError as e:
+		_ = request.data
+    # unathenticated request
+    app.logger.debug(e)
+    app.logger.debug('unauthenticated')
+		# abort(make_response(jsonify(message=str(e)), 401))
+  # claims = aws_auth.claims
+  
   data = HomeActivities.run()
   return data, 200
 
@@ -111,6 +148,7 @@ def data_notifications():
   return data, 200
 
 @app.route("/api/activities/@<string:handle>", methods=['GET'])
+@xray_recorder.capture('activites_users')
 def data_handle(handle):
   model = UserActivities.run(handle)
   if model['errors'] is not None:
