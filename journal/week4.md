@@ -162,7 +162,7 @@ bin/db-setup
 
 ## Replaced the home activities mock endpoint with a real api call;
     from lib.db import pool
-    
+
         sql = """
         SELECT * FROM activities
         """
@@ -173,3 +173,25 @@ bin/db-setup
               # the first field being the data
               json = cur.fetchall()
         return json[0]
+
+
+update security roles
+### Connecting to our RDS instance via GITPOD
+To connect to the RDS instance we provide our Gitpod IP and whitelist for inbound traffic on port 5432. Get our Gitpod IP by using below bash command;
+    GITPOD_IP=$(curl ifconfig.me)
+
+
+### Created an inbound rule for Postgres (5432) and provided our GITPOD_ID
+Got the security group rule id so can easily modify it in the future from the terminal in Gitpod
+
+      export DB_SG_ID="sg-0808ee10ff73520da"
+      gp env DB_SG_ID="sg-0808ee10ff73520da"
+
+      export DB_SG_RULE_ID="sgr-0cecfdc1194563b74"
+      gp env DB_SG_RULE_ID="sgr-0cecfdc1194563b74"
+
+### To update our security groups when we need, we can do this for access.
+
+      aws ec2 modify-security-group-rules \
+          --group-id $DB_SG_ID \
+          --security-group-rules "SecurityGroupRuleId=$DB_SG_RULE_ID,SecurityGroupRule={Description=GITPOD,IpProtocol=tcp,FromPort=5432,ToPort=5432,CidrIpv4=$GITPOD_IP/32}"
