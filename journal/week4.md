@@ -141,3 +141,35 @@ bin/db-setup
         source "$bin_path/db-create"
         source "$bin_path/db-schema-load"
         source "$bin_path/db-seed"
+
+### Add the following to our #requirments.txt
+
+  psycopg[binary]
+  psycopg[pool]
+
+### installed the drivers
+
+  pip install -r requirements.txt
+
+
+### Created a new DB object and Connection pool in the backend-flask folder # lib/db.py
+
+    from psycopg_pool import ConnectionPool
+    import os
+
+    connection_url = os.getenv("CONNECTION_URL")
+    pool = ConnectionPool(connection_url)
+
+## Replaced the home activities mock endpoint with a real api call;
+    from lib.db import pool
+    
+        sql = """
+        SELECT * FROM activities
+        """
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+              cur.execute(sql)
+              # this will return a tuple
+              # the first field being the data
+              json = cur.fetchall()
+        return json[0]

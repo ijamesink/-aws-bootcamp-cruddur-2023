@@ -122,25 +122,25 @@ def data_home():
   #   request.headers.get('Authorization')
   # )
   access_token = extract_access_token(request.headers)
-	try:
-		claims = cognito_jwt_token.verify(access_token)
-		# self.claims = self.token_service.claims
-		# g.cognito_claims = self.claims
-    # authenticated request
-    app.logger.debug('authenticated')
-    app.logger.debug(claims)
-    app.logger.debug(claims['username'])
-    data = HomeActivities.run(cognito_user_id = claims['username'])
-	except TokenVerifyError as e:
-		_ = request.data
-    # unathenticated request
-    app.logger.debug(e)
-    app.logger.debug('unauthenticated')
-		# abort(make_response(jsonify(message=str(e)), 401))
-  # claims = aws_auth.claims
-  
-  data = HomeActivities.run()
-  return data, 200
+    try:
+      claims = cognito_jwt_token.verify(access_token)
+      # self.claims = self.token_service.claims
+      # g.cognito_claims = self.claims
+      # authenticated request
+      app.logger.debug('authenticated')
+      app.logger.debug(claims)
+      app.logger.debug(claims['username'])
+      data = HomeActivities.run(cognito_user_id = claims['username'])
+    except TokenVerifyError as e:
+      _ = request.data
+      # unathenticated request
+      app.logger.debug(e)
+      app.logger.debug('unauthenticated')
+      # abort(make_response(jsonify(message=str(e)), 401))
+      # claims = aws_auth.claims
+    
+    data = HomeActivities.run()
+    return data, 200
 
 @app.route("/api/activities/notifications", methods=['GET'])
 def data_notifications():
