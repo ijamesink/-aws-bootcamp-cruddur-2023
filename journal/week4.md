@@ -195,3 +195,6 @@ Got the security group rule id so can easily modify it in the future from the te
       aws ec2 modify-security-group-rules \
           --group-id $DB_SG_ID \
           --security-group-rules "SecurityGroupRuleId=$DB_SG_RULE_ID,SecurityGroupRule={Description=GITPOD,IpProtocol=tcp,FromPort=5432,ToPort=5432,CidrIpv4=$GITPOD_IP/32}"
+
+# Note
+Have not been able to lad a layer to the lambda function in AWS yet
