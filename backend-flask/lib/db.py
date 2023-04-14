@@ -16,9 +16,9 @@ class Db:
     template_path = os.path.join(*pathing)
 
     green = '\033[92m'
-    no color = '\033[0m'
+    no_color = '\033[0m'
     print('\n')
-    print(f'{green} load SQL template: {template_path} -----{no color}')
+    print(f'{green} load SQL template: {template_path} -----{no_color}')
 
     with open (template_path, 'r') as f:
       template_content = f.read()
@@ -32,20 +32,20 @@ class Db:
 
   def print_params(self, params):
     blue = '\033[94m'
-    no color = '\033[0m'
-    print(f'{cyan}SQL Params: {no color}')
+    no_color = '\033[0m'
+    print(f'{cyan}SQL Params: {no_color}')
     for key, value in params.items():
       print(key, ':', value)
 
 
-  def print_sql(self, title, sql):
+  def print_sql(self, title, sql, params={}):
     cyan = '\033[96m'
-    no color = '\033[0m'
-    print(f'{cyan}SQL Statement - [{title}] -----{no color}')
-    print(sql)
+    no_color = '\033[0m'
+    print(f'{cyan}SQL Statement - [{title}] -----{no_color}')
+    print(sql, params)
 
   def query_commit_return_id(self, sql, params={}):
-    self.print_sql('commit with returning', sql)
+    self.print_sql('commit with returning', sql, params)
     
     pattern = r'\bRETURNING\b'
     is_returning_id = re.search(pattern, sql)
@@ -56,7 +56,7 @@ class Db:
 
     try:
         with self.pool.connection() as conn:
-          cur = onn.cursor()
+          cur = conn.cursor()
           cur.execute(sql, params)
           if is_returning_id:
             returning_id = cur.fetchone()[0]
@@ -64,9 +64,9 @@ class Db:
           if is_returning_id:
             return returning_id
 
-      except Exception as err:
-        print_sql_err(err)
-        # conn.rollback()
+    except Exception as err:
+      self.print_sql_err(err)
+      # conn.rollback()
 
 
   # when we want to commit data such as insert
@@ -84,7 +84,7 @@ class Db:
     
   # when we want to return an array of json object
   def query_array_json(self, sql, params):
-    self.print_sql('array', sql)
+    self.print_sql('array', sql, params)
 
     wrapped_sql  = self.query_wrap_array(sql)
     with self.pool.connection() as conn:
@@ -101,7 +101,7 @@ class Db:
 
   # when we want to return a json object
   def query_object_json(self, sql, params):
-    self.print_sql('json', sql)
+    self.print_sql('json', sql, params)
     self.print_params(params)
 
     wrapped_sql  = self.query_wrap_object(sql)
@@ -114,13 +114,23 @@ class Db:
         return json[0]
 
 
+  def query_value(self,sql,params={}):
+    self.print_sql('value',sql,params)
+
+    with self.pool.connection() as conn:
+      with conn.cursor() as cur:
+        cur.execute(sql,params)
+        json = cur.fetchone()
+        return json[0]
+
+
   def query_wrap_object(template):
-  sql = f"""
-  (SELECT COALESCE(row_to_json(object_row),'{{}}'::json) FROM (
-  {template}
-  ) object_row);
-  """
-  return sql
+    sql = f"""
+    (SELECT COALESCE(row_to_json(object_row),'{{}}'::json) FROM (
+    {template}
+    ) object_row);
+    """
+    return sql
 
 
   def query_wrap_array(template):
@@ -132,12 +142,12 @@ class Db:
     return sql
 
 
-  def print_sql_err(err):
-  # get details about the exception
-  err_type, err_obj, traceback = sys.exc_info()
+  def print_sql_err(self, err):
+    # get details about the exception
+    err_type, err_obj, traceback = sys.exc_info()
 
-  # get the line number when the exception occured
-  line_num = traceback.tb_lineno
+    # get the line number when the exception occured
+    line_num = traceback.tb_lineno
 
   # print the connect () error
   print ('\npsycopg ERROR:', err, 'on line number:', line_num)

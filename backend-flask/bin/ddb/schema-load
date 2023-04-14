@@ -13,7 +13,7 @@ if len(sys.argv) == 2:
 
 dynamodb = boto3.client('dynamodb', **attrs)
 
-table_name = 'cruddur-message'
+table_name = 'cruddur-messages'
 
 response = dynamodb.create_table(
     TableName= table_name,
@@ -27,7 +27,7 @@ response = dynamodb.create_table(
             'AttributeType': 'S'
         }
     ],
-    ],
+
     KeySchema=[
         {
             'AttributeName': 'pk',
@@ -36,35 +36,17 @@ response = dynamodb.create_table(
         {
             'AttributeName': 'sk',
             'KeyType': 'RANGE'
-        },
+        }
     ],
-  
+
     # GlobalSecondaryIndexes=[
-    #     {
-    #         'IndexName': 'string',
-    #         'KeySchema': [
-    #             {
-    #                 'AttributeName': 'string',
-    #                 'KeyType': 'HASH'|'RANGE'
-    #             },
-    #         ],
-    #         'Projection': {
-    #             'ProjectionType': 'ALL'|'KEYS_ONLY'|'INCLUDE',
-    #             'NonKeyAttributes': [
-    #                 'string',
-    #             ]
-    #         },
-    #         'ProvisionedThroughput': {
-    #             'ReadCapacityUnits': 123,
-    #             'WriteCapacityUnits': 123
-    #         }
-    #     },
     # ],
+
     BillingMode='PROVISIONED',
     ProvisionedThroughput={
         'ReadCapacityUnits': 5,
         'WriteCapacityUnits': 5
-    },
+}
 )
 
 print(response)
