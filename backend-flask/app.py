@@ -96,7 +96,12 @@ def data_message_groups():
     # unathenticated request
     app.logger.debug(e)
   return {}, 401
+  
  
+ @app.route('/api/health-check')
+def health_check():
+  return {'success': True}, 200
+
 
 @app.route("/api/messages/<string:message_group_uuid>", methods=['GET'])
 def data_messages(message_group_uuid):
